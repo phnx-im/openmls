@@ -21,7 +21,7 @@ use crate::{
     storage::{DmlsStorageProvider, OpenMlsProvider},
 };
 
-//// The [`DmlsGroup`] struct is a wrapper around [`MlsGroup`] that provides
+/// The [`DmlsGroup`] struct is a wrapper around [`MlsGroup`] that provides
 /// DMLs-specific functionality.
 pub struct DmlsGroup(pub(super) MlsGroup);
 

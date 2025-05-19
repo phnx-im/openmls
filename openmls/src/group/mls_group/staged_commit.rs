@@ -31,6 +31,7 @@ use crate::{
 };
 
 impl GroupEpochSecrets {
+    #[allow(clippy::too_many_arguments)]
     fn derive_epoch_secrets(
         &self,
         provider: &impl OpenMlsProvider,

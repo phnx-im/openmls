@@ -185,11 +185,11 @@ pub fn openmls_test(_attr: TokenStream, item: TokenStream) -> TokenStream {
     out.into()
 }
 
+#[cfg(all(feature = "sqlite-provider", not(target_arch = "wasm32",)))]
 #[proc_macro_attribute]
 pub fn opendmls_test(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let func = parse_macro_input!(item as ItemFn);
 
-    let attrs = func.attrs;
     let sig = func.sig;
     let fn_name = sig.ident;
     let body = func.block.stmts;
@@ -198,8 +198,8 @@ pub fn opendmls_test(_attr: TokenStream, item: TokenStream) -> TokenStream {
 
     let mut test_funs: Vec<proc_macro2::TokenStream> = Vec::new();
 
-    #[cfg(all(feature = "sqlite-provider", not(target_arch = "wasm32",)))]
     {
+        let attrs = func.attrs;
         let rc_ciphersuites = rc.crypto().supported_ciphersuites();
         for ciphersuite in rc_ciphersuites {
             let val = ciphersuite as u16;

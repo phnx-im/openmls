@@ -1119,7 +1119,7 @@ impl PartialEq for EpochSecrets {
 }
 
 impl EpochSecrets {
-    /// Get the sender_data secret.
+    // /// Get the sender_data secret.
     //#[cfg(any(feature = "test-utils", test))]
     //pub(crate) fn sender_data_secret(&self) -> &SenderDataSecret {
     //    &self.sender_data_secret
@@ -1130,7 +1130,7 @@ impl EpochSecrets {
         &self.confirmation_key
     }
 
-    /// Epoch authenticator
+    // /// Epoch authenticator
     //#[cfg(any(feature = "test-utils", test))]
     //pub(crate) fn epoch_authenticator(&self) -> &EpochAuthenticator {
     //    &self.epoch_authenticator

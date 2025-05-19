@@ -83,10 +83,7 @@ impl DmlsGroup {
             }
         };
         let provider = provider.provider_for_epoch(epoch);
-        Ok(self
-            .0
-            .process_message(&provider, protocol_message)
-            .map_err(|e| ProcessMessageError::from(e))?)
+        Ok(self.0.process_message(&provider, protocol_message)?)
     }
 
     /// DMLS wrapper around the [`MlsGroup::self_update`] function.

@@ -145,7 +145,7 @@ impl Pprf {
                 return Err(PprfError::PuncturedInput);
             }
 
-            let bit = get_bit(&leaf_index, depth);
+            let bit = get_bit(leaf_index, depth);
             prefix.push_bit(bit);
             depth += 1;
         }
@@ -153,7 +153,7 @@ impl Pprf {
         // Step 2: Derive and walk the rest of the path
         for d in depth..self.max_depth() {
             let (left, right) = current_node.derive_children(crypto, ciphersuite).unwrap();
-            let bit = get_bit(&leaf_index, d);
+            let bit = get_bit(leaf_index, d);
 
             let (next_node, copath_node) = if bit { (right, left) } else { (left, right) };
 
