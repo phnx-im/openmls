@@ -30,7 +30,6 @@ pub fn create_alice_group(
     let (credential_with_key, signature_keys) =
         new_credential(provider, b"Alice", ciphersuite.signature_algorithm());
 
-    println!("Creating group");
     let group = DmlsGroup::new(
         provider,
         &signature_keys,
@@ -38,7 +37,6 @@ pub fn create_alice_group(
         credential_with_key.clone(),
     )
     .expect("An unexpected error occurred.");
-    println!("");
 
     (group, credential_with_key, signature_keys)
 }
