@@ -1,3 +1,5 @@
+#![cfg(all(feature = "sqlite-provider", not(target_arch = "wasm32",)))]
+
 use openmls::{
     group::{
         dmls::{
