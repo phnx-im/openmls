@@ -278,8 +278,8 @@ impl CommitSecret {
 }
 
 /// The `InitSecret` is used to connect the next epoch to the current one.
-#[derive(Debug, Serialize, Deserialize)]
-#[cfg_attr(any(test, feature = "test-utils"), derive(PartialEq, Clone))]
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[cfg_attr(any(test, feature = "test-utils"), derive(PartialEq))]
 pub(crate) struct InitSecret {
     pprf: Pprf,
 }
