@@ -35,6 +35,7 @@ use crate::{
 /// Throughout the code, this one should be used instead of `openmls_traits::storage::StorageProvider`.
 pub trait StorageProvider: openmls_traits::storage::StorageProvider<CURRENT_VERSION> {}
 
+/// A convenience trait for the current version of the DMLs storage.
 pub trait DmlsStorageProvider:
     openmls_traits::dmls_traits::DmlsStorageProvider<CURRENT_VERSION>
 {
@@ -76,25 +77,6 @@ pub trait OpenMlsProvider:
     /// The storage error type
     type StorageError: std::error::Error;
 }
-
-//pub trait OpenDmlsProvider: openmls_traits::dmls_traits::OpenDmlsProvider {}
-
-//impl<
-//Error: std::error::Error,
-//DmlsError: std::error::Error,
-//DSP: DmlsStorageProvider<StorageError = DmlsError>,
-//SP: StorageProvider<Error = Error>,
-//OP: openmls_traits::dmls_traits::OpenDmlsProvider<
-//StorageProvider = SP,
-//DmlsStorageProvider = DSP,
-//>,
-//> OpenDmlsProvider for OP
-//{
-//type Storage = SP;
-//type DmlsStorage = DSP;
-//type StorageError = Error;
-//type DmlsStorageError = DmlsError;
-//}
 
 impl<
         Error: std::error::Error,

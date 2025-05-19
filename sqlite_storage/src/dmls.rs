@@ -1,6 +1,6 @@
 use std::{borrow::Borrow, ops::Deref as _};
 
-use openmls_traits::dmls_traits::DmlsStorageProvider;
+use openmls_traits::dmls_traits::{DmlsEpoch, DmlsStorageProvider};
 use rusqlite::{params, Connection};
 
 use crate::{Codec, SqliteStorageProvider, STORAGE_PROVIDER_VERSION};
@@ -8,11 +8,11 @@ use crate::{Codec, SqliteStorageProvider, STORAGE_PROVIDER_VERSION};
 impl<C: Codec, ConnectionRef: Borrow<Connection>> DmlsStorageProvider<STORAGE_PROVIDER_VERSION>
     for SqliteStorageProvider<C, ConnectionRef>
 {
-    fn storage_provider_for_epoch(&self, epoch: Vec<u8>) -> Self {
+    fn storage_provider_for_epoch(&self, epoch: DmlsEpoch) -> Self {
         self.clone_with_epoch(epoch)
     }
 
-    fn clone_epoch_data(&self, destination_epoch: &[u8]) -> Result<(), Self::Error> {
+    fn clone_epoch_data(&self, destination_epoch: &DmlsEpoch) -> Result<(), Self::Error> {
         let connection_guard = self.connection.lock().unwrap();
         let connection = connection_guard.deref().borrow();
         clone_encryption_key_pairs(connection, self.epoch(), destination_epoch)?;
@@ -38,7 +38,7 @@ impl<C: Codec, ConnectionRef: Borrow<Connection>> DmlsStorageProvider<STORAGE_PR
         Ok(())
     }
 
-    fn epoch(&self) -> &[u8] {
+    fn epoch(&self) -> &DmlsEpoch {
         &self.epoch
     }
 }

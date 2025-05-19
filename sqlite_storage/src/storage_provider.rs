@@ -5,7 +5,10 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use openmls_traits::storage::{Entity, Key, StorageProvider};
+use openmls_traits::{
+    dmls_traits::DmlsEpoch,
+    storage::{Entity, Key, StorageProvider},
+};
 use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
 
@@ -32,7 +35,7 @@ refinery::embed_migrations!("migrations");
 /// Implements the [`StorageProvider`] trait. The codec used by the storage
 /// provider is set by the generic parameter `C`.
 pub struct SqliteStorageProvider<C: Codec, ConnectionRef: Borrow<Connection>> {
-    pub(super) epoch: Vec<u8>,
+    pub(super) epoch: DmlsEpoch,
     pub(super) connection: Arc<Mutex<ConnectionRef>>,
     _codec: PhantomData<C>,
 }
@@ -41,13 +44,13 @@ impl<C: Codec, ConnectionRef: Borrow<Connection>> SqliteStorageProvider<C, Conne
     /// Create a new instance of the [`SqliteStorageProvider`].
     pub fn new(connection: ConnectionRef) -> Self {
         Self {
-            epoch: Vec::new(),
+            epoch: DmlsEpoch(Vec::new()),
             connection: Arc::new(connection.into()),
             _codec: PhantomData,
         }
     }
 
-    pub fn clone_with_epoch(&self, epoch: Vec<u8>) -> Self {
+    pub fn clone_with_epoch(&self, epoch: DmlsEpoch) -> Self {
         Self {
             epoch,
             connection: self.connection.clone(),
@@ -127,7 +130,6 @@ impl<C: Codec, ConnectionRef: Borrow<Connection>> StorageProvider<STORAGE_PROVID
         group_id: &GroupId,
         tree: &TreeSync,
     ) -> Result<(), Self::Error> {
-        println!("Storing tree for epoch {:?}", self.epoch);
         let connection_guard = self.connection.lock().unwrap();
         let connection = connection_guard.deref().borrow();
         StorableGroupDataRef(tree).store::<C, _>(
@@ -274,7 +276,6 @@ impl<C: Codec, ConnectionRef: Borrow<Connection>> StorageProvider<STORAGE_PROVID
         group_id: &GroupId,
         group_epoch_secrets: &GroupEpochSecrets,
     ) -> Result<(), Self::Error> {
-        println!("Storing group epoch secrets for epoch {:?}", self.epoch);
         let connection_guard = self.connection.lock().unwrap();
         let connection = connection_guard.deref().borrow();
         StorableGroupDataRef(group_epoch_secrets).store::<C, _>(
@@ -421,17 +422,9 @@ impl<C: Codec, ConnectionRef: Borrow<Connection>> StorageProvider<STORAGE_PROVID
         &self,
         group_id: &GroupId,
     ) -> Result<Option<TreeSync>, Self::Error> {
-        println!("Loading tree for epoch {:?}", self.epoch);
         let connection_guard = self.connection.lock().unwrap();
         let connection = connection_guard.deref().borrow();
-        let res =
-            StorableGroupData::load::<C, _>(connection, group_id, &self.epoch, GroupDataType::Tree);
-        if let Ok(Some(_)) = res {
-            println!("Loaded tree for epoch {:?}", self.epoch);
-        } else {
-            println!("No tree found for epoch {:?}", self.epoch);
-        }
-        res
+        StorableGroupData::load::<C, _>(connection, group_id, &self.epoch, GroupDataType::Tree)
     }
 
     fn group_context<
@@ -555,7 +548,6 @@ impl<C: Codec, ConnectionRef: Borrow<Connection>> StorageProvider<STORAGE_PROVID
         &self,
         group_id: &GroupId,
     ) -> Result<Option<GroupEpochSecrets>, Self::Error> {
-        println!("Loading group epoch secrets for epoch {:?}", self.epoch);
         let connection_guard = self.connection.lock().unwrap();
         let connection = connection_guard.deref().borrow();
         StorableGroupData::load::<C, _>(
@@ -672,7 +664,6 @@ impl<C: Codec, ConnectionRef: Borrow<Connection>> StorageProvider<STORAGE_PROVID
         &self,
         group_id: &GroupId,
     ) -> Result<(), Self::Error> {
-        println!("Deleting tree for epoch {:?}", self.epoch);
         let connection_guard = self.connection.lock().unwrap();
         let connection = connection_guard.deref().borrow();
         StorableGroupIdRef(group_id).delete_group_data::<C>(

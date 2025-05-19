@@ -1,7 +1,9 @@
-use std::mem;
+//! This module contains the [`DmlsGroup`] struct, which is a wrapper around
+//! [`MlsGroup`] that provides DMLs-specific functionality.
+use std::{mem, ops::Deref};
 
 use openmls_traits::{
-    dmls_traits::{DmlsStorageProvider as _, OpenDmlsProvider},
+    dmls_traits::{DmlsEpoch, DmlsStorageProvider as _, OpenDmlsProvider},
     random::OpenMlsRand,
     signatures::Signer,
     storage::StorageProvider as _,
@@ -12,33 +14,49 @@ use crate::{
     group::{
         mls_group::builder::MlsGroupBuilder, ExportSecretError, GroupId, MergeCommitError,
         MlsGroup, MlsGroupCreateConfig, MlsGroupState, MlsGroupStateError, NewGroupError,
-        StagedCommit,
+        StagedCommit, StagedWelcome, WelcomeError,
     },
     prelude::CredentialWithKey,
     schedule::GroupEpochSecrets,
     storage::{DmlsStorageProvider, OpenMlsProvider},
 };
 
-// DEBUG
-pub struct DmlsGroup(pub MlsGroup);
+//// The [`DmlsGroup`] struct is a wrapper around [`MlsGroup`] that provides
+/// DMLs-specific functionality.
+pub struct DmlsGroup(pub(super) MlsGroup);
 
+impl Deref for DmlsGroup {
+    type Target = MlsGroup;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+/// Error type for merging pending commits in DMLS groups.
 #[derive(Debug, Error)]
 pub enum DmlsMergePendingError<StorageError> {
+    /// Error merging the commit.
     #[error(transparent)]
     DmlsMergeError(#[from] DmlsMergeError<StorageError>),
+    /// Group state error.
     #[error(transparent)]
     GroupStateError(#[from] MlsGroupStateError),
 }
 
+/// Error type for merging commits in DMLS groups.
 #[derive(Debug, Error)]
 pub enum DmlsMergeError<StorageError> {
+    /// Error merging the commit.
     #[error(transparent)]
     MergeCommitError(#[from] MergeCommitError<StorageError>),
+    /// Error exporting the epoch ID.
     #[error(transparent)]
     ExportSecretError(#[from] ExportSecretError),
 }
 
 impl DmlsGroup {
+    /// Creates a new [`DmlsGroup`] instance.
     pub fn new<Provider: OpenDmlsProvider>(
         provider: &Provider,
         signer: &impl Signer,
@@ -46,10 +64,11 @@ impl DmlsGroup {
         credential_with_key: CredentialWithKey,
     ) -> Result<Self, NewGroupError<<Provider as OpenMlsProvider>::StorageError>> {
         let ciphersuite = mls_group_create_config.ciphersuite();
-        let temp_epoch = provider
+        let rand_temp_epoch = provider
             .rand()
             .random_vec(ciphersuite.hash_length())
             .unwrap();
+        let temp_epoch = DmlsEpoch(rand_temp_epoch);
         let temp_epoch_provider = provider.provider_for_epoch(temp_epoch.clone());
         let group = MlsGroupBuilder::new().build_internal(
             &temp_epoch_provider,
@@ -72,6 +91,16 @@ impl DmlsGroup {
         Ok(dmls_group)
     }
 
+    /// Creates a new [`DmlsGroup`] instance from a [`StagedWelcome`].
+    pub fn from_staged_welcome<Provider: OpenMlsProvider>(
+        provider: &Provider,
+        staged_welcome: StagedWelcome,
+    ) -> Result<Self, WelcomeError<Provider::StorageError>> {
+        let group = staged_welcome.into_group(provider)?;
+        let dmls_group = Self(group);
+        Ok(dmls_group)
+    }
+
     /// Merge a [StagedCommit] into the group after inspection. As this advances
     /// the epoch of the group, it also clears any pending commits.
     pub fn merge_staged_commit<Provider: OpenDmlsProvider>(
@@ -81,10 +110,7 @@ impl DmlsGroup {
     ) -> Result<(), DmlsMergeError<<Provider as OpenMlsProvider>::StorageError>> {
         let old_epoch = self.derive_epoch_id(provider).unwrap();
         let old_epoch_storage = provider.storage().storage_provider_for_epoch(old_epoch);
-        let temp_new_epoch = provider
-            .rand()
-            .random_vec(self.0.ciphersuite().hash_length())
-            .unwrap();
+        let temp_new_epoch = DmlsEpoch::random(provider.rand(), self.ciphersuite()).unwrap();
         // We clone the data from the old epoch storage to the new epoch
         // storage. This allows us to still process commits that are sent to the
         // old epoch. All we have to do is update the init secret of the old
@@ -125,6 +151,7 @@ impl DmlsGroup {
         Ok(())
     }
 
+    /// Merge a pending commit into the group.
     pub fn merge_pending_commit<Provider: OpenDmlsProvider>(
         &mut self,
         provider: &Provider,
@@ -142,72 +169,28 @@ impl DmlsGroup {
         }
     }
 
+    /// Derive the current epoch id of this group.
     pub fn derive_epoch_id<Provider: OpenMlsProvider>(
         &self,
         provider: &Provider,
-    ) -> Result<Vec<u8>, ExportSecretError> {
-        self.0.export_secret(
+    ) -> Result<DmlsEpoch, ExportSecretError> {
+        let bytes = self.0.export_secret(
             provider,
             "DMLS epoch ID",
             &[],
             self.0.ciphersuite().hash_length(),
-        )
+        )?;
+        Ok(DmlsEpoch(bytes))
     }
 
-    fn group_id(&self) -> &GroupId {
-        self.0.group_id()
-    }
-
+    /// Returns the group state of the group with the given group id for the
+    /// given epoch.
     pub fn load_for_epoch<Provider: DmlsStorageProvider>(
         storage: &Provider,
-        epoch: &[u8],
+        epoch: DmlsEpoch,
         group_id: &GroupId,
     ) -> Option<Self> {
-        let provider = storage.storage_provider_for_epoch(epoch.to_vec());
+        let provider = storage.storage_provider_for_epoch(epoch);
         MlsGroup::load(&provider, group_id).unwrap().map(Self)
-    }
-}
-
-// Wrapper functions
-
-mod wrappers {
-    use openmls_traits::{dmls_traits::OpenDmlsProvider, signatures::Signer};
-
-    use crate::{
-        framing::{MlsMessageOut, ProcessedMessage, ProtocolMessage},
-        group::{AddMembersError, ProcessMessageError},
-        prelude::{group_info::GroupInfo, KeyPackage},
-        storage::OpenMlsProvider,
-    };
-
-    use super::DmlsGroup;
-
-    impl DmlsGroup {
-        pub fn add_members<Provider: OpenDmlsProvider>(
-            &mut self,
-            provider: &Provider,
-            signer: &impl Signer,
-            key_packages: &[KeyPackage],
-        ) -> Result<
-            (MlsMessageOut, MlsMessageOut, Option<GroupInfo>),
-            AddMembersError<<Provider as OpenMlsProvider>::StorageError>,
-        > {
-            let epoch = self.derive_epoch_id(provider).unwrap();
-            let provider = provider.provider_for_epoch(epoch);
-            self.0.add_members(&provider, signer, key_packages)
-        }
-
-        pub fn process_message<Provider: OpenDmlsProvider>(
-            &mut self,
-            provider: &Provider,
-            message: impl Into<ProtocolMessage>,
-        ) -> Result<ProcessedMessage, ProcessMessageError> {
-            let epoch = self.derive_epoch_id(provider).unwrap();
-            println!("Processing message for epoch: {:?}", epoch);
-            let provider = provider.provider_for_epoch(epoch);
-            self.0
-                .process_message(&provider, message)
-                .map_err(|e| ProcessMessageError::from(e))
-        }
     }
 }

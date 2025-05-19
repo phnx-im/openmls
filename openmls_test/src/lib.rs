@@ -214,7 +214,7 @@ pub fn opendmls_test(_attr: TokenStream, item: TokenStream) -> TokenStream {
                     use openmls_sqlite_storage::{SqliteStorageProvider, Codec, Connection};
                     use openmls_traits::OpenMlsProvider;
                     use openmls_traits::{types::Ciphersuite, crypto::OpenMlsCrypto, storage::StorageProvider as StorageProviderTrait};
-                    use openmls_traits::dmls_traits::OpenDmlsProvider;
+                    use openmls_traits::dmls_traits::{OpenDmlsProvider, DmlsEpoch};
                     use openmls_traits::dmls_traits::DmlsStorageProvider as _;
 
                     #[derive(Default)]
@@ -268,7 +268,7 @@ pub fn opendmls_test(_attr: TokenStream, item: TokenStream) -> TokenStream {
                     }
 
                     impl OpenDmlsProvider for OpenMlsSqliteTestProvider {
-                        fn provider_for_epoch(&self, epoch: Vec<u8>) -> Self {
+                        fn provider_for_epoch(&self, epoch: DmlsEpoch) -> Self {
                             let epoch_storage = self.storage.storage_provider_for_epoch(epoch);
                             Self {
                                 crypto: self.crypto.clone(),
