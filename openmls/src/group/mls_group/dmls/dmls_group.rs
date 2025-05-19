@@ -65,6 +65,7 @@ impl DmlsGroup {
             .storage()
             .clone_epoch_data(&actual_epoch)
             .unwrap();
+
         // Delete the old epoch storage
         temp_epoch_provider.storage().delete_epoch_data().unwrap();
 
