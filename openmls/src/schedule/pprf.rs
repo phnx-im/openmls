@@ -78,8 +78,8 @@ impl PprfNode {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-#[cfg_attr(any(test, feature = "test-utils"), derive(PartialEq, Clone))]
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[cfg_attr(any(test, feature = "test-utils"), derive(PartialEq))]
 pub(super) struct Pprf {
     #[serde(
         serialize_with = "serialize_hashmap",
