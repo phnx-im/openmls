@@ -54,7 +54,7 @@ impl DmlsGroup {
         (DmlsMessageOut, MlsMessageOut, Option<GroupInfo>),
         AddMembersError<<Provider as OpenMlsProvider>::StorageError>,
     > {
-        let epoch = self.derive_epoch_id(provider).unwrap();
+        let epoch = self.derive_epoch_id(provider.crypto()).unwrap();
         let provider = provider.provider_for_epoch(epoch.clone());
         let (mls_message, welcome, group_info) =
             self.0.add_members(&provider, signer, key_packages)?;
@@ -94,7 +94,7 @@ impl DmlsGroup {
         leaf_node_parameters: LeafNodeParameters,
     ) -> Result<DmlsCommitMessageBundle, SelfUpdateError<<Provider as OpenMlsProvider>::StorageError>>
     {
-        let epoch = self.derive_epoch_id(provider).unwrap();
+        let epoch = self.derive_epoch_id(provider.crypto()).unwrap();
         let provider = provider.provider_for_epoch(epoch.clone());
         let (message, welcome, group_info) = self
             .0
@@ -113,7 +113,7 @@ impl DmlsGroup {
         &mut self,
         provider: &Provider,
     ) -> Result<(), <Provider as OpenMlsProvider>::StorageError> {
-        let epoch = self.derive_epoch_id(provider).unwrap();
+        let epoch = self.derive_epoch_id(provider.crypto()).unwrap();
         let provider = provider.provider_for_epoch(epoch.clone());
         self.0.clear_pending_commit(provider.storage())?;
         Ok(())

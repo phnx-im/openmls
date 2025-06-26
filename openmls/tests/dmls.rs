@@ -67,7 +67,9 @@ fn cant_process_same_commit_twice() {
         .unwrap();
 
     alice_group.merge_pending_commit(&alice_provider).unwrap();
-    let epoch_id = alice_group.derive_epoch_id(&alice_provider).unwrap();
+    let epoch_id = alice_group
+        .derive_epoch_id(alice_provider.crypto())
+        .unwrap();
 
     let group_config = MlsGroupJoinConfig::builder().build();
 

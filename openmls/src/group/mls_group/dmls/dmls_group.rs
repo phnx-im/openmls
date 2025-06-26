@@ -3,6 +3,7 @@
 use std::{mem, ops::Deref};
 
 use openmls_traits::{
+    crypto::OpenMlsCrypto,
     dmls_traits::{DmlsEpoch, DmlsStorageProvider as _, OpenDmlsProvider},
     random::OpenMlsRand,
     signatures::Signer,
@@ -79,7 +80,7 @@ impl DmlsGroup {
         let dmls_group = Self(group);
 
         // Move the storage from the temp new epoch to the real new epoch
-        let actual_epoch = dmls_group.derive_epoch_id(provider).unwrap();
+        let actual_epoch = dmls_group.derive_epoch_id(provider.crypto()).unwrap();
         temp_epoch_provider
             .storage()
             .clone_epoch_data(&actual_epoch)
@@ -108,7 +109,7 @@ impl DmlsGroup {
         provider: &Provider,
         staged_commit: StagedCommit,
     ) -> Result<(), DmlsMergeError<<Provider as OpenMlsProvider>::StorageError>> {
-        let old_epoch = self.derive_epoch_id(provider).unwrap();
+        let old_epoch = self.derive_epoch_id(provider.crypto()).unwrap();
         let old_epoch_storage = provider.storage().storage_provider_for_epoch(old_epoch);
         let temp_new_epoch = DmlsEpoch::random(provider.rand(), self.ciphersuite()).unwrap();
         // We clone the data from the old epoch storage to the new epoch
@@ -142,7 +143,7 @@ impl DmlsGroup {
             .unwrap();
 
         // Move the storage from the temp new epoch to the real new epoch
-        let new_epoch = self.derive_epoch_id(provider).unwrap();
+        let new_epoch = self.derive_epoch_id(provider.crypto()).unwrap();
         println!("New epoch: {:?}", new_epoch);
         temp_new_epoch_storage.clone_epoch_data(&new_epoch).unwrap();
         // Delete the old epoch storage
@@ -170,7 +171,7 @@ impl DmlsGroup {
     }
 
     /// Derive the current epoch id of this group.
-    pub fn derive_epoch_id<Provider: OpenMlsProvider>(
+    pub fn derive_epoch_id<Provider: OpenMlsCrypto>(
         &self,
         provider: &Provider,
     ) -> Result<DmlsEpoch, ExportSecretError> {
