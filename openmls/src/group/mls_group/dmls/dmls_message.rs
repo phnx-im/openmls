@@ -16,8 +16,8 @@ use crate::{
 #[derive(PartialEq, Debug, Clone, TlsSize, TlsDeserialize, TlsDeserializeBytes)]
 #[cfg_attr(feature = "test-utils", derive(TlsSerialize))]
 pub struct DmlsMessageIn {
-    pub(super) epoch: DmlsEpoch,
-    pub(super) message: MlsMessageIn,
+    pub epoch: DmlsEpoch,
+    pub message: MlsMessageIn,
 }
 
 impl DmlsMessageIn {
