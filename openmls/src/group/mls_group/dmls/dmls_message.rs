@@ -16,7 +16,9 @@ use crate::{
 #[derive(PartialEq, Debug, Clone, TlsSize, TlsDeserialize, TlsDeserializeBytes)]
 #[cfg_attr(feature = "test-utils", derive(TlsSerialize))]
 pub struct DmlsMessageIn {
+    /// The epoch of the message.
     pub epoch: DmlsEpoch,
+    /// The actual message.
     pub message: MlsMessageIn,
 }
 
