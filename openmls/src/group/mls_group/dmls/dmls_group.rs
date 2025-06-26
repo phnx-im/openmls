@@ -7,7 +7,7 @@ use openmls_traits::{
     dmls_traits::{DmlsEpoch, DmlsStorageProvider as _, OpenDmlsProvider},
     random::OpenMlsRand,
     signatures::Signer,
-    storage::StorageProvider as _,
+    storage::StorageProvider,
 };
 use thiserror::Error;
 
@@ -114,8 +114,9 @@ impl DmlsGroup {
         let temp_new_epoch = DmlsEpoch::random(provider.rand(), self.ciphersuite()).unwrap();
         // We clone the data from the old epoch storage to the new epoch
         // storage. This allows us to still process commits that are sent to the
-        // old epoch. All we have to do is update the init secret of the old
-        // epoch at the end to get the improved FS from the PPRF.
+        // old epoch. All we have to do at the end is update the init secret of
+        // the old epoch to get the improved FS from the PPRF and discard the
+        // pending commit we just merged.
 
         // TODO: Remove unwrap
         old_epoch_storage.clone_epoch_data(&temp_new_epoch).unwrap();
@@ -140,6 +141,11 @@ impl DmlsGroup {
         old_epoch_secrets.set_init_secret(init_secret);
         old_epoch_storage
             .write_group_epoch_secrets(self.group_id(), &old_epoch_secrets)
+            .unwrap();
+
+        // Clear the pending commit in the old epoch storage
+        old_epoch_storage
+            .write_group_state(self.group_id(), &MlsGroupState::Operational)
             .unwrap();
 
         // Move the storage from the temp new epoch to the real new epoch
