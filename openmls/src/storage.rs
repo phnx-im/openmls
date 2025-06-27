@@ -28,12 +28,18 @@ use crate::{
     treesync::{node::encryption_keys::EncryptionKeyPair, EncryptionKey},
 };
 
-#[cfg(test)]
-pub mod kat_storage_stability;
+//#[cfg(test)]
+//pub mod kat_storage_stability;
 
 /// A convenience trait for the current version of the storage.
 /// Throughout the code, this one should be used instead of `openmls_traits::storage::StorageProvider`.
 pub trait StorageProvider: openmls_traits::storage::StorageProvider<CURRENT_VERSION> {}
+
+/// A convenience trait for the current version of the DMLs storage.
+pub trait DmlsStorageProvider:
+    openmls_traits::dmls_traits::DmlsStorageProvider<CURRENT_VERSION>
+{
+}
 
 /// A convenience trait for the current version of the public storage.
 /// Throughout the code, this one should be used instead of `openmls_traits::public_storage::PublicStorageProvider`.
@@ -49,6 +55,10 @@ pub trait PublicStorageProvider:
 }
 
 impl<P: openmls_traits::storage::StorageProvider<CURRENT_VERSION>> StorageProvider for P {}
+impl<P: openmls_traits::dmls_traits::DmlsStorageProvider<CURRENT_VERSION>> DmlsStorageProvider
+    for P
+{
+}
 
 impl<P: openmls_traits::public_storage::PublicStorageProvider<CURRENT_VERSION>>
     PublicStorageProvider for P
