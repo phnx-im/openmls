@@ -12,6 +12,7 @@ use openmls_traits::{
 use thiserror::Error;
 
 use crate::{
+    error::LibraryError,
     group::{
         mls_group::builder::MlsGroupBuilder, ExportSecretError, GroupId, MergeCommitError,
         MlsGroup, MlsGroupCreateConfig, MlsGroupState, MlsGroupStateError, NewGroupError,
@@ -93,11 +94,25 @@ impl DmlsGroup {
     }
 
     /// Creates a new [`DmlsGroup`] instance from a [`StagedWelcome`].
-    pub fn from_staged_welcome<Provider: OpenMlsProvider>(
+    pub fn from_staged_welcome<Provider: OpenDmlsProvider>(
         provider: &Provider,
         staged_welcome: StagedWelcome,
-    ) -> Result<Self, WelcomeError<Provider::StorageError>> {
-        let group = staged_welcome.into_group(provider)?;
+    ) -> Result<Self, WelcomeError<<Provider as OpenMlsProvider>::StorageError>> {
+        let ciphersuite = staged_welcome.group_context().ciphersuite();
+        let epoch_id_bytes = staged_welcome
+            .group_epoch_secrets
+            .exporter_secret()
+            .derive_exported_secret(
+                ciphersuite,
+                provider.crypto(),
+                "DMLS epoch ID",
+                &[],
+                ciphersuite.hash_length(),
+            )
+            .map_err(LibraryError::unexpected_crypto_error)?;
+        let epoch_id = DmlsEpoch(epoch_id_bytes);
+        let provider = provider.provider_for_epoch(epoch_id.clone());
+        let group = staged_welcome.into_group(&provider)?;
         let dmls_group = Self(group);
         Ok(dmls_group)
     }
