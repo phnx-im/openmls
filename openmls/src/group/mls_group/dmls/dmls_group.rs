@@ -165,7 +165,6 @@ impl DmlsGroup {
 
         // Move the storage from the temp new epoch to the real new epoch
         let new_epoch = self.derive_epoch_id(provider.crypto()).unwrap();
-        println!("New epoch: {:?}", new_epoch);
         temp_new_epoch_storage.clone_epoch_data(&new_epoch).unwrap();
         // Delete the old epoch storage
         temp_new_epoch_storage.delete_epoch_data().unwrap();

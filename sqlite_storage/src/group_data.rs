@@ -122,10 +122,6 @@ impl<GroupData: Entity<STORAGE_PROVIDER_VERSION>> StorableGroupDataRef<'_, Group
                 STORAGE_PROVIDER_VERSION
             ],
         )?;
-        println!(
-            "Stored {:?} for epoch {:?} and inserted {} rows",
-            data_type, epoch_id, rows
-        );
         Ok(())
     }
 }
