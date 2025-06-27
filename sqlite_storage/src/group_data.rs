@@ -111,7 +111,7 @@ impl<GroupData: Entity<STORAGE_PROVIDER_VERSION>> StorableGroupDataRef<'_, Group
         data_type: GroupDataType,
         epoch_id: &[u8],
     ) -> Result<(), rusqlite::Error> {
-        let rows = connection.execute(
+        connection.execute(
             "INSERT OR REPLACE INTO openmls_group_data (group_id, dmls_epoch_id, data_type, group_data, provider_version) 
             VALUES (?, ?, ?, ?, ?)",
             params![
