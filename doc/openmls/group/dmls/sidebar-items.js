@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["dmls_group","dmls_message","wrappers"]};
