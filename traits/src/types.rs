@@ -484,6 +484,7 @@ pub enum Ciphersuite {
     ///
     /// [draft-ietf-mls-pq-ciphersuites]: https://datatracker.ietf.org/doc/draft-ietf-mls-pq-ciphersuites
     #[cfg(feature = "draft-ietf-mls-pq-ciphersuites")]
+    #[serde(alias = "AIR_128_MLKEM768_AES256GCM_SHA384_Ed25519")]
     MLS_128_MLKEM768_AES256GCM_SHA384_Ed25519 = 0xF042,
 
     /// ML-KEM768 | AES-GCM256 | SHA2-384 | EcDSA P256
