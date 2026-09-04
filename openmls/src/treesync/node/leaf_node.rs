@@ -498,6 +498,41 @@ impl LeafNode {
         &self.payload.extensions
     }
 
+    /// The virtual-client derivation info this leaf carries in its
+    /// `app_data_dictionary` under [`VC_COMPONENT_ID`], or `None` if the leaf
+    /// carries none. Fails with [`VirtualClientsError::DerivationInfoMalformed`]
+    /// if the entry does not decode.
+    ///
+    /// [`VC_COMPONENT_ID`]: crate::components::vc_derivation_info::VC_COMPONENT_ID
+    /// [`VirtualClientsError::DerivationInfoMalformed`]: crate::components::vc_derivation_info::VirtualClientsError::DerivationInfoMalformed
+    #[cfg(feature = "virtual-clients-draft")]
+    pub(crate) fn vc_derivation_info(
+        &self,
+    ) -> Result<
+        Option<crate::components::vc_derivation_info::DerivationInfo>,
+        crate::components::vc_derivation_info::VirtualClientsError,
+    > {
+        use tls_codec::DeserializeBytes as _;
+
+        use crate::components::vc_derivation_info::{
+            DerivationInfo, VirtualClientsError, VC_COMPONENT_ID,
+        };
+
+        let Some(bytes) = self
+            .extensions()
+            .app_data_dictionary()
+            .and_then(|dict| dict.dictionary().get(&VC_COMPONENT_ID))
+        else {
+            return Ok(None);
+        };
+        DerivationInfo::tls_deserialize_exact_bytes(bytes)
+            .map(Some)
+            .map_err(|e| {
+                log::error!("vc: leaf derivation info deserialize failed: {e:?}");
+                VirtualClientsError::DerivationInfoMalformed
+            })
+    }
+
     /// Returns `true` if the [`ExtensionType`] is supported by this leaf node.
     pub(crate) fn supports_extension(&self, extension_type: &ExtensionType) -> bool {
         extension_type.is_default()
